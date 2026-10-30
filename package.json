@@ -1,0 +1,41 @@
+{
+  "name": "permit-atlas",
+  "version": "1.0.0",
+  "description": "Local-first permit intelligence and exclusive allocation workspace",
+  "private": true,
+  "license": "Apache-2.0",
+  "author": "Permit Atlas contributors",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "node scripts/dependency-notices.cjs && vite build",
+    "serve": "node server/cli.cjs",
+    "desktop": "npm run build && electron .",
+    "pack": "electron-builder --dir --publish never",
+    "dist": "electron-builder --publish never",
+    "test": "node --test server/*.test.cjs"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "image-size": "^2.0.2",
+    "lucide-react": "^0.468.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "sql.js": "^1.13.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^35.0.0",
+    "electron-builder": "^26.0.0",
+    "vite": "^6.1.0"
+  },
+  "build": {
+    "appId": "local.permitatlas.desktop",
+    "productName": "Permit Atlas",
+    "directories": { "output": "release" },
+    "files": ["desktop/**/*", "server/**/*", "!server/**/*.test.cjs", "dist/**/*", "samples/fixtures.json", "package.json", "LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.txt"],
+    "mac": { "identity": null, "target": ["dmg", "zip"], "category": "public.app-category.business" },
+    "win": { "target": ["nsis"] },
+    "linux": { "target": ["AppImage"] }
+  }
+}
