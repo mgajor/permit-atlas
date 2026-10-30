@@ -4,7 +4,7 @@
   "description": "Local-first permit intelligence and exclusive allocation workspace",
   "private": true,
   "license": "Apache-2.0",
-  "author": "Permit Atlas contributors",
+  "author": "Mateusz Gajor",
   "main": "desktop/main.cjs",
   "scripts": {
     "dev": "vite --host 127.0.0.1",

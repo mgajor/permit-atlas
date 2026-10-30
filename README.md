@@ -1,19 +1,27 @@
 # Permit Atlas
 
-A local-first desktop workspace for researching municipal permits, reviewing source evidence, allocating projects exclusively within your workspace, and preparing human-approved direct-mail batches.
+A local-first desktop app that turns public building-permit data into reviewed, ready-to-use project leads for contractors: pull permits from city open-data portals, inspect the evidence behind each one, approve it, allocate it exclusively to a customer, and optionally prepare a postcard batch that a person reviews before anything is sent.
 
-Built with Electron, React, Express and SQLite (sql.js). Apache-2.0 licensed. This is software and methodology, **not a published homeowner mailing list or a promise of qualified leads**.
+Built by [Mateusz Gajor](https://arctyklabs.com/projects) with Electron, React, Express and SQLite (sql.js). Apache-2.0.
 
-## What it demonstrates
+![Permit Atlas overview, showing synthetic demonstration data](docs/overview.jpg)
 
-- Source-specific public-data ingestion with pagination and explicit failure states.
-- Search, filters, evidence inspection, raw source records and review notes.
-- Human review before allocation, cumulative weekly caps and durable project reservations.
-- Synthetic demonstration records with missing values, named contractors, duplicate projects and uncertain enrichment.
-- CSV and customer HTML exports.
-- Opt-in Lob postcard workflow with artwork, explicit recipient review, cost-estimate acknowledgment and separate submission confirmation.
+## Why it exists
 
-No calls or email outreach. No scheduled/automatic paid mailing. Public records and missing contractor fields do not establish homeowner consent or project availability.
+It started as a weekly lead workflow for a remodeling contractor who was paying thousands a month for leads and works in the Chicago and Phoenix areas. New remodeling permits turned out to be a better signal: they're public, current, and tell you what kind of work is planned.
+
+Chicago's portal had the richest data, which raised the obvious question: is that one city's luck, or does the pattern carry over? Most cities publish permits through a small number of shared platforms rather than one-off systems, so I added Seattle as a test outside the client's area. The pattern carries over, with differences in which fields each city requires. This repository is the generalized, public version, shipped with synthetic data only.
+
+## What it does
+
+- **Ingests** permits from Chicago, Seattle and Mesa through their official Socrata datasets, with pagination, timeouts and explicit failure states.
+- **Shows its evidence.** Every record keeps its raw source data, provenance and review notes, so you can check why it looks like a lead.
+- **Keeps a person in the loop.** Records start as pending; only approved ones can be allocated or mailed.
+- **Allocates exclusively.** Projects are reserved per customer with weekly caps, and related permits at the same address can't be sold twice.
+- **Exports** to CSV (formula-injection safe) and to customer-ready HTML.
+- **Prepares postcards** through your own [Lob](https://docs.lob.com/) account: test mode by default, explicit recipient review, a durable outbox and per-piece idempotency so a retry can't buy the same batch twice.
+
+![Permit explorer with synthetic records awaiting review](docs/explorer.jpg)
 
 ## Run locally
 
@@ -23,55 +31,35 @@ Node.js 22+ and npm:
 npm ci
 npm test
 npm run build
-npm run serve
+npm run serve       # browser mode at http://127.0.0.1:4318
+npm run desktop     # Electron desktop shell
 ```
 
-Open http://127.0.0.1:4318. For the desktop shell:
+A fresh workspace loads 20 fictional, undeliverable demo records. Source refresh is manual. Set `PERMIT_ATLAS_DATA_DIR` to keep a clean demo workspace separate from real data.
+
+## Direct mail
+
+Open **Direct mail**, add your own Lob **test** key, create a draft from approved permits with 4×6 artwork and reviewed recipient addresses, then confirm the test submission. Test mode uses Lob's test environment and doesn't print anything.
+
+Live mail needs all three of: launching with `PERMIT_ATLAS_ALLOW_LIVE_MAIL=1`, a live key, and a typed purchase confirmation. Synthetic records can never be sent live. The per-piece cost shown in the app is your own estimate, not a Lob quote or a spending cap, so set billing limits in your Lob account. If a submission times out, its result is marked uncertain: check the provider IDs before resending.
+
+## Packaging
 
 ```sh
-npm run desktop
+npm run pack   # unpacked app for the current platform
+npm run dist   # installers: macOS DMG/ZIP, Windows NSIS, Linux AppImage
 ```
 
-Fresh workspaces load **fictional, nonmailable synthetic examples only**. Source refresh is manual. Existing local workspaces are not erased or replaced by an upgrade. Use `PERMIT_ATLAS_DATA_DIR` with `npm run serve` for a separate clean demonstration workspace.
+CI builds and tests on macOS, Windows and Linux. Hands-on testing so far has been on macOS. Builds are unsigned and not notarized.
 
-## Sources and enrichment
+## Limits and responsibilities
 
-Chicago, Seattle and Mesa have manual Socrata connectors. Source data remains subject to its own terms, publication delays and schema changes. Phoenix is represented in synthetic examples; this release has no Phoenix live connector.
+- **A permit is a signal, not a promise.** A missing contractor field, an open status or an approval in this app doesn't mean a job is available or that a homeowner has agreed to be contacted.
+- **Public data still carries obligations.** Marketing to people found in public records is subject to privacy and advertising rules where you operate. This software doesn't make that compliant for you.
+- **Single-user and local.** The server binds to loopback and rejects cross-site requests, but it has no login or multi-user isolation. Don't expose it to the internet.
 
-Owner/address matches are evidence candidates, not verified identities. The earlier research scripts and personal datasets are intentionally excluded. The public release does not automatically enrich owners from assessor records. See [PROCESS.md](PROCESS.md) for normalization, classification, allocations and limitations.
+Details: [PROCESS.md](PROCESS.md) (methodology and safeguards), [PRIVACY.md](PRIVACY.md), [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Direct mail: bring your own Lob account
+## License
 
-1. Open Direct mail. Test mode is the default.
-2. Supply your own Lob secret **test key**. Desktop credentials use Electron OS-protected encryption; browser mode keeps credentials in memory for the process lifetime. Keys are never returned through the API.
-3. Approve selected permits in the explorer. Create a draft with front/back 4×6 postcard artwork (PNG/JPEG), sender and explicitly reviewed structured recipient addresses.
-4. Inspect the batch, acknowledge estimate limitations and compliance responsibility, and type the test submission confirmation.
-5. Submit deliberately. Test mode calls Lob's test environment through its API; it does not purchase physical mail. A provider account/key is required even for this real provider test.
-
-Live submission additionally requires launching with `PERMIT_ATLAS_ALLOW_LIVE_MAIL=1`, a live secret key and the live purchase confirmation. Synthetic records must never be submitted in live mode. **The app's per-piece amount is an operator-entered estimate, not a provider quote or guaranteed spending cap.** Configure billing controls in the provider account; review current Lob pricing. Address verification and test submissions can have provider-account implications.
-
-Durable outbox state and per-item idempotency reduce duplicate submissions. A timeout can leave an uncertain result: do not blindly resend it. Provider IDs permit manual status refresh. Submission is not delivery, and cancellation is not guaranteed. See [Lob's official API documentation](https://docs.lob.com/) for provider requirements and artwork specifications.
-
-## Packaging and platform status
-
-```sh
-npm run build
-npm run pack  # unpacked application on the current platform
-npm run dist  # configured installer targets on the current platform
-```
-
-Targets: macOS DMG/ZIP, Windows NSIS, Linux AppImage. Local macOS packaging/application was exercised during development; Windows/Linux user-interface verification remains pending. The GitHub Actions matrix builds/tests each platform; a green build is not a claim of manual platform testing.
-
-macOS builds are explicitly unsigned by default and are **not notarized**. We do not discover or consume a local developer signing identity automatically. Public signed/notarized distribution requires a separately configured release process and your own Apple credentials. The build workflow neither signs nor publishes release installers.
-
-## Safety and privacy
-
-This is a **single-user loopback application**, not a publicly hosted service. No application authentication, multi-tenant isolation or encrypted workspace database is provided. Do not expose it through a public tunnel. The local user is trusted. Review [PRIVACY.md](PRIVACY.md) and [SECURITY.md](SECURITY.md).
-
-No provider credentials, real owner datasets, local databases, artwork uploads, research pitches or generated customer exports belong in Git. The repository allowlist and packaging allowlist enforce separate boundaries.
-
-## License and third parties
-
-[Apache License 2.0](LICENSE), with attribution in [NOTICE](NOTICE). Commercial use and proprietary derivatives are permitted subject to the license. Third-party dependencies retain their own terms; municipal data, provider services, trademarks and uploaded artwork are not licensed by this repository. No municipality or mail provider endorses this project.
-
-Provided as-is, without a promise of legal compliance, lead quality, energy savings, revenue, delivery or business outcomes. Consult qualified counsel about the actual jurisdictions, data use and outreach involved. See [CONTRIBUTING.md](CONTRIBUTING.md) before contributing.
+[Apache License 2.0](LICENSE), with attribution in [NOTICE](NOTICE). Municipal data, provider services, trademarks and uploaded artwork aren't covered by this license. Not affiliated with or endorsed by any municipality or by Lob. Provided as-is, with no promise of lead quality, delivery or business results.

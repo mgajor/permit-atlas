@@ -62,8 +62,11 @@ async function openMail({ dataDir, store, credentialStore, transport = fetch, ti
       const fd = fs.openSync(temporary, 'wx', 0o600);
       try { fs.writeFileSync(fd, JSON.stringify({ version: 1, batches })); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
       fs.renameSync(temporary, file);
-      const directory = fs.openSync(dataDir, 'r');
-      try { fs.fsyncSync(directory); } finally { fs.closeSync(directory); }
+      // Windows can't fsync a directory (EPERM); the rename itself is the commit point there.
+      if (process.platform !== 'win32') {
+        const directory = fs.openSync(dataDir, 'r');
+        try { fs.fsyncSync(directory); } finally { fs.closeSync(directory); }
+      }
     } finally { if (fs.existsSync(temporary)) fs.unlinkSync(temporary); }
   }
   let interrupted = false;

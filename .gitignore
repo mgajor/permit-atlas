@@ -24,6 +24,8 @@
 !/CONTRIBUTING.md
 !/scripts/
 !/scripts/**
+!/docs/
+!/docs/*.jpg
 
 # Defense in depth within allowed directories
 **/.env
